@@ -1,0 +1,5 @@
+spring.datasource:
+  url: jdbc:postgresql://127.0.0.1/sales-service
+  driver-class-name: org.postgresql.Driver
+  username: sm://vs-cops-sandbox/hansi-xyz?app=peppi&stage=unstable
+  password: sm://vs-cops-sandbox/hansi-xyz?app=peppi&stage=unstable

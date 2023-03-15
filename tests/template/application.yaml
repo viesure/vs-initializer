@@ -1,0 +1,17 @@
+# commented line sm://vs-test-project/hansi-xyz?app=peppi&stage=unstable
+
+# ^ empty line
+# base level:
+password: sm://vs-test-project/hansi-xyz?app=peppi&stage=unstable
+password-with-comment: sm://vs-test-project/hansi-xyz?app=peppi&stage=unstable # secret with comment
+password-quoted: "sm://vs-test-project/hansi-xyz?app=peppi&stage=unstable"
+password-quoted-with-comment: "sm://vs-test-project/hansi-xyz?app=peppi&stage=unstable" # quoted secret with comment
+
+# sub level:
+sub-level:
+  password: sm://vs-test-project/hansi-xyz?app=peppi&stage=unstable
+  password-with-comment: sm://vs-test-project/hansi-xyz?app=peppi&stage=unstable # secret with comment
+  password-quoted: "sm://vs-test-project/hansi-xyz?app=peppi&stage=unstable"
+  password-quoted-with-comment: "sm://vs-test-project/hansi-xyz?app=peppi&stage=unstable" # quoted secret with comment
+
+sm://vs-test-project/hansi-xyz?app=peppi&stage=unstable

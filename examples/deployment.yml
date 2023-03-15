@@ -1,0 +1,112 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: secrets-demo
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-env
+  namespace: secrets-demo
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: application-config-template
+  namespace: secrets-demo
+data:
+  application.yaml: |
+    spring.datasource:
+      url: jdbc:postgresql://127.0.0.1/sales-service
+      driver-class-name: org.postgresql.Driver
+      username: sm://vs-cops-sandbox/hansi-xyz?app=peppi&stage=unstable
+      password: sm://vs-cops-sandbox/hansi-xyz?app=peppi&stage=unstable
+  .env: |
+    ENVVAR1=hansi
+    ENVVAR2=bertl
+    ENVVAR3=sm://vs-cops-sandbox/hansi-xyz?app=peppi&stage=unstable
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: init-secrets-provider
+  namespace: secrets-demo
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: init-secrets-provider-role
+  namespace: secrets-demo
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets"]
+    verbs: ["get", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: init-secrets-provider-rolebinding
+  namespace: secrets-demo
+subjects:
+  - kind: ServiceAccount
+    name: init-secrets-provider
+    namespace: secrets-demo
+roleRef:
+  kind: Role
+  name: init-secrets-provider-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: secrets-demo
+  namespace: secrets-demo
+  labels:
+    app: secrets-demo
+spec:
+  selector:
+    matchLabels:
+      app: secrets-demo
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: secrets-demo
+    spec:
+      serviceAccountName: init-secrets-provider
+      volumes:
+        - name: config-templates
+          configMap:
+            name: application-config-template
+        - name: config
+          emptyDir: {}
+      initContainers:
+        - name: secrets-demo-init
+          image: gcr.io/vs-tools/toolimages/vs-initializer2:latest
+          imagePullPolicy: Always
+          env:
+            - name: APP_LOG_LEVEL
+              value: DEBUG
+            - name: TEMPLATE_DIR
+              value: "/data.tmpl"
+            - name: OUTPUT_DIR
+              value: "/data"
+            - name: ENV_SECRET
+              value: "app-env"
+          volumeMounts:
+            - name: config-templates
+              mountPath: "/data.tmpl"
+            - name: config
+              mountPath: "/data"
+      containers:
+        - name: secrets-demo-app
+          image: debian:11
+          command: ["/bin/bash", "-c", "--"]
+          args: ["while true; do sleep 30; done;"]
+          envFrom:
+            - secretRef:
+                name: app-env
+          volumeMounts:
+            - name: config
+              mountPath: "/data"

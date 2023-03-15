@@ -1,0 +1,42 @@
+image: docker:20
+
+stages:
+  - test
+  - build-and-push
+
+variables:
+  IMAGENAME: gcr.io/vs-tools/toolimages/vs-initializer
+  IMAGEVERSION: "2.0"
+  ACCEPT_HEADER: "Accept: application/vnd.github.v3+json"
+
+default:
+  interruptible: true
+
+unit-tests:
+  stage: test
+  image: golang:1.19
+  tags: [k8s-2000-millicores]
+
+  script:
+    - go test --cover -v ./...
+
+build-and-push:
+  stage: build-and-push
+  tags: [k8s-10-millicores]
+
+  before_script:
+    - apk add --update --no-cache curl jq
+    - DLURL=`curl -s -L -H ${ACCEPT_HEADER} "https://api.github.com/repos/GoogleCloudPlatform/docker-credential-gcr/releases/latest" | jq ".assets[].browser_download_url" --raw-output | grep linux_amd64`
+    - curl -fsSL "${DLURL}" | tar xz --to-stdout docker-credential-gcr > /usr/local/bin/docker-credential-gcr && chmod +x /usr/local/bin/docker-credential-gcr
+    - docker-credential-gcr configure-docker
+
+  script: |
+    IMAGETAG="${IMAGEVERSION}.${CI_PIPELINE_IID}"
+    echo "Building image \"${IMAGENAME}:${IMAGETAG}\""
+    docker build --build-arg VERSION=${IMAGETAG} -t ${IMAGENAME}:${IMAGETAG} .
+    if [ "${CI_COMMIT_BRANCH}" == "master" ]; then
+      echo "We are on the master branch, tagging the image additionally as \"${IMAGENAME}:latest\""
+      docker tag ${IMAGENAME}:${IMAGETAG} ${IMAGENAME}:latest
+    fi
+    echo "Pushing ${IMAGENAME} with all tags"
+    docker push ${IMAGENAME} --all-tags
