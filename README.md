@@ -21,8 +21,6 @@ The resulting image can be pulled from the
 
 ```gcr.io/vs-tools/toolimages/vs-initializer:latest```
 
-The image version corresponds with the `project.version` value inside [pom.xml](pom.xml#L9).
-
 ## Configuration
 
 The initcontainer image is configured using environment variables:
